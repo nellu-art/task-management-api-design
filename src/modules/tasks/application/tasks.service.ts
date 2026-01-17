@@ -37,16 +37,24 @@ export class TasksService {
       createdAt: new Date(),
       updatedAt: new Date(),
       assignedPeople: [],
+      dueDate: createTaskDto.dueDate
+        ? new Date(createTaskDto.dueDate)
+        : undefined,
     };
     return this.taskRepository.create(task);
   }
 
   async updateTask(id: string, updateTaskDto: UpdateTaskDto): Promise<Task> {
     await this.ensureTaskExists(id);
-    return this.taskRepository.update(id, {
-      ...updateTaskDto,
+    const { dueDate, ...rest } = updateTaskDto;
+    const updateData: Partial<Task> = {
+      ...rest,
       updatedAt: new Date(),
-    });
+    };
+    if (dueDate !== undefined) {
+      updateData.dueDate = dueDate ? new Date(dueDate) : undefined;
+    }
+    return this.taskRepository.update(id, updateData);
   }
 
   async deleteTask(id: string): Promise<void> {
