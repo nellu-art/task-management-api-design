@@ -27,7 +27,7 @@ export class TasksController {
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  async getTaskById(@Param('id') id: string): Promise<Task | null> {
+  async getTaskById(@Param('id') id: string): Promise<Task> {
     return this.tasksService.getTaskById(id);
   }
 

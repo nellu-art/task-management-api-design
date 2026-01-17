@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import {
   ITaskRepository,
   TASK_REPOSITORY,
@@ -18,8 +18,16 @@ export class TasksService {
     return this.taskRepository.findAll();
   }
 
-  async getTaskById(id: string): Promise<Task | null> {
-    return this.taskRepository.findById(id);
+  async getTaskById(id: string): Promise<Task> {
+    return this.ensureTaskExists(id);
+  }
+
+  private async ensureTaskExists(id: string): Promise<Task> {
+    const task = await this.taskRepository.findById(id);
+    if (!task) {
+      throw new NotFoundException(`Task with ID ${id} not found`);
+    }
+    return task;
   }
 
   async createTask(createTaskDto: CreateTaskDto): Promise<Task> {
@@ -34,17 +42,20 @@ export class TasksService {
   }
 
   async updateTask(id: string, updateTaskDto: UpdateTaskDto): Promise<Task> {
+    await this.ensureTaskExists(id);
     return this.taskRepository.update(id, {
       ...updateTaskDto,
       updatedAt: new Date(),
     });
   }
 
-  async deleteTask(id: string): Promise<boolean> {
-    return this.taskRepository.delete(id);
+  async deleteTask(id: string): Promise<void> {
+    await this.ensureTaskExists(id);
+    await this.taskRepository.delete(id);
   }
 
   async assignPersonToTask(taskId: string, personId: string): Promise<Task> {
+    await this.ensureTaskExists(taskId);
     return this.taskRepository.assignPerson(taskId, personId);
   }
 
@@ -52,6 +63,7 @@ export class TasksService {
     taskId: string,
     personId: string,
   ): Promise<Task> {
+    await this.ensureTaskExists(taskId);
     return this.taskRepository.unassignPerson(taskId, personId);
   }
 }

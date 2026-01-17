@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import {
   ITaskRepository,
@@ -84,14 +85,16 @@ describe('TasksService', () => {
       expect(repository.findById).toHaveBeenCalledTimes(1);
     });
 
-    it('should return null when task is not found', async () => {
+    it('should throw NotFoundException when task is not found', async () => {
       repository.findById.mockResolvedValue(null);
 
-      const result = await service.getTaskById('non-existent-id');
-
-      expect(result).toBeNull();
+      await expect(service.getTaskById('non-existent-id')).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(service.getTaskById('non-existent-id')).rejects.toThrow(
+        'Task with ID non-existent-id not found',
+      );
       expect(repository.findById).toHaveBeenCalledWith('non-existent-id');
-      expect(repository.findById).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -176,11 +179,13 @@ describe('TasksService', () => {
         updatedAt: new Date(),
       };
 
+      repository.findById.mockResolvedValue(mockTask);
       repository.update.mockResolvedValue(updatedTask);
 
       const result = await service.updateTask('task-1', updateTaskDto);
 
       expect(result).toEqual(updatedTask);
+      expect(repository.findById).toHaveBeenCalledWith('task-1');
       expect(repository.update).toHaveBeenCalledWith(
         'task-1',
         expect.objectContaining({
@@ -202,6 +207,7 @@ describe('TasksService', () => {
         updatedAt: new Date(),
       };
 
+      repository.findById.mockResolvedValue(mockTask);
       repository.update.mockResolvedValue(updatedTask);
 
       const result = await service.updateTask('task-1', updateTaskDto);
@@ -215,27 +221,48 @@ describe('TasksService', () => {
         }),
       );
     });
+
+    it('should throw NotFoundException when task does not exist', async () => {
+      const updateTaskDto: UpdateTaskDto = {
+        title: 'Updated Title',
+      };
+
+      repository.findById.mockResolvedValue(null);
+
+      await expect(
+        service.updateTask('non-existent-id', updateTaskDto),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.updateTask('non-existent-id', updateTaskDto),
+      ).rejects.toThrow('Task with ID non-existent-id not found');
+      expect(repository.findById).toHaveBeenCalledWith('non-existent-id');
+      expect(repository.update).not.toHaveBeenCalled();
+    });
   });
 
   describe('deleteTask', () => {
-    it('should delete a task and return true', async () => {
+    it('should delete a task successfully', async () => {
+      repository.findById.mockResolvedValue(mockTask);
       repository.delete.mockResolvedValue(true);
 
-      const result = await service.deleteTask('task-1');
+      await service.deleteTask('task-1');
 
-      expect(result).toBe(true);
+      expect(repository.findById).toHaveBeenCalledWith('task-1');
       expect(repository.delete).toHaveBeenCalledWith('task-1');
       expect(repository.delete).toHaveBeenCalledTimes(1);
     });
 
-    it('should return false when task deletion fails', async () => {
-      repository.delete.mockResolvedValue(false);
+    it('should throw NotFoundException when task does not exist', async () => {
+      repository.findById.mockResolvedValue(null);
 
-      const result = await service.deleteTask('non-existent-id');
-
-      expect(result).toBe(false);
-      expect(repository.delete).toHaveBeenCalledWith('non-existent-id');
-      expect(repository.delete).toHaveBeenCalledTimes(1);
+      await expect(service.deleteTask('non-existent-id')).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(service.deleteTask('non-existent-id')).rejects.toThrow(
+        'Task with ID non-existent-id not found',
+      );
+      expect(repository.findById).toHaveBeenCalledWith('non-existent-id');
+      expect(repository.delete).not.toHaveBeenCalled();
     });
   });
 
@@ -248,11 +275,13 @@ describe('TasksService', () => {
         updatedAt: new Date(),
       };
 
+      repository.findById.mockResolvedValue(mockTask);
       repository.assignPerson.mockResolvedValue(updatedTask);
 
       const result = await service.assignPersonToTask('task-1', personId);
 
       expect(result).toEqual(updatedTask);
+      expect(repository.findById).toHaveBeenCalledWith('task-1');
       expect(repository.assignPerson).toHaveBeenCalledWith('task-1', personId);
       expect(repository.assignPerson).toHaveBeenCalledTimes(1);
     });
@@ -266,12 +295,27 @@ describe('TasksService', () => {
         updatedAt: new Date(),
       };
 
+      repository.findById.mockResolvedValue(mockTask);
       repository.assignPerson.mockResolvedValue(updatedTask);
 
       const result = await service.assignPersonToTask('task-1', personId2);
 
       expect(result).toEqual(updatedTask);
       expect(repository.assignPerson).toHaveBeenCalledWith('task-1', personId2);
+    });
+
+    it('should throw NotFoundException when task does not exist', async () => {
+      const personId = 'person-1';
+      repository.findById.mockResolvedValue(null);
+
+      await expect(
+        service.assignPersonToTask('non-existent-id', personId),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.assignPersonToTask('non-existent-id', personId),
+      ).rejects.toThrow('Task with ID non-existent-id not found');
+      expect(repository.findById).toHaveBeenCalledWith('non-existent-id');
+      expect(repository.assignPerson).not.toHaveBeenCalled();
     });
   });
 
@@ -289,11 +333,13 @@ describe('TasksService', () => {
         updatedAt: new Date(),
       };
 
+      repository.findById.mockResolvedValue(taskWithPerson);
       repository.unassignPerson.mockResolvedValue(updatedTask);
 
       const result = await service.unassignPersonFromTask('task-1', personId);
 
       expect(result).toEqual(updatedTask);
+      expect(repository.findById).toHaveBeenCalledWith('task-1');
       expect(repository.unassignPerson).toHaveBeenCalledWith(
         'task-1',
         personId,
@@ -315,6 +361,7 @@ describe('TasksService', () => {
         updatedAt: new Date(),
       };
 
+      repository.findById.mockResolvedValue(taskWithPeople);
       repository.unassignPerson.mockResolvedValue(updatedTask);
 
       const result = await service.unassignPersonFromTask('task-1', personId1);
@@ -324,6 +371,20 @@ describe('TasksService', () => {
         'task-1',
         personId1,
       );
+    });
+
+    it('should throw NotFoundException when task does not exist', async () => {
+      const personId = 'person-1';
+      repository.findById.mockResolvedValue(null);
+
+      await expect(
+        service.unassignPersonFromTask('non-existent-id', personId),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.unassignPersonFromTask('non-existent-id', personId),
+      ).rejects.toThrow('Task with ID non-existent-id not found');
+      expect(repository.findById).toHaveBeenCalledWith('non-existent-id');
+      expect(repository.unassignPerson).not.toHaveBeenCalled();
     });
   });
 });

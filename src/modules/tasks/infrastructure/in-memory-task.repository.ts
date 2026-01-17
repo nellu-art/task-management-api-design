@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Task } from '../domain/task.entity';
 import { ITaskRepository } from '../domain/task.repository.interface';
 
@@ -22,7 +22,7 @@ export class TaskRepositoryInMemory implements ITaskRepository {
   async update(id: string, taskUpdate: Partial<Task>): Promise<Task> {
     const existingTask = this.tasks.get(id);
     if (!existingTask) {
-      throw new NotFoundException();
+      throw new Error(`Task with ID ${id} not found`);
     }
     const updatedTask = {
       ...existingTask,
@@ -40,7 +40,7 @@ export class TaskRepositoryInMemory implements ITaskRepository {
   async assignPerson(taskId: string, personId: string): Promise<Task> {
     const task = this.tasks.get(taskId);
     if (!task) {
-      throw new NotFoundException();
+      throw new Error(`Task with ID ${taskId} not found`);
     }
     if (!task.assignedPeople.includes(personId)) {
       task.assignedPeople.push(personId);
@@ -53,7 +53,7 @@ export class TaskRepositoryInMemory implements ITaskRepository {
   async unassignPerson(taskId: string, personId: string): Promise<Task> {
     const task = this.tasks.get(taskId);
     if (!task) {
-      throw new NotFoundException();
+      throw new Error(`Task with ID ${taskId} not found`);
     }
     task.assignedPeople = task.assignedPeople.filter((id) => id !== personId);
     task.updatedAt = new Date();
