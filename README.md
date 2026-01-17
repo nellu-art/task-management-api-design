@@ -1,98 +1,283 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Tasks API - MVP Implementation
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A RESTful API for managing tasks, built with NestJS following clean architecture principles. This MVP was developed in 1 hour to demonstrate core design patterns and architectural decisions.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🎯 Overview
 
-## Description
+This is a task management API that allows you to create, read, update, and delete tasks, as well as assign and unassign people to tasks. The application follows a layered architecture pattern with clear separation of concerns, making it easy to understand, test, and evolve.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🏗️ Architecture Decisions
 
-## Project setup
+### Why In-Memory Storage?
+- **Fast development**: No database setup required
+- **No external dependencies**: Simplifies deployment and testing
+- **Easy to demonstrate patterns**: Focus on architecture, not infrastructure
+- **Production**: Replace with real database (PostgreSQL, MongoDB, etc.)
 
-```bash
-$ npm install
+### Why Layered Architecture?
+- **Clear separation of concerns**: Presentation, Application, Domain, and Infrastructure layers
+- **Easy to understand**: Each layer has a single responsibility
+- **Scales well**: Suitable for small to medium applications
+- **Can evolve to Clean Architecture**: Foundation is already in place
+
+### Why These Patterns First?
+- **Repository Pattern**: Most important for data abstraction - allows easy swapping of storage implementations
+- **DTO Pattern**: Essential for validation and API contract definition
+- **Dependency Injection**: Built into NestJS, provides free benefits for testability and maintainability
+
+## 📁 Project Structure
+
+```
+src/
+├── modules/
+│   ├── tasks/
+│   │   ├── application/          # Business logic layer
+│   │   │   ├── dto/              # Data Transfer Objects
+│   │   │   └── tasks.service.ts  # Application service
+│   │   ├── domain/               # Domain layer
+│   │   │   ├── task.entity.ts    # Domain entity
+│   │   │   └── task.repository.interface.ts  # Repository interface
+│   │   ├── infrastructure/       # Infrastructure layer
+│   │   │   └── in-memory-task.repository.ts  # In-memory implementation
+│   │   ├── presentation/         # Presentation layer
+│   │   │   └── tasks.controller.ts  # REST API controller
+│   │   └── tasks.module.ts       # NestJS module
+│   └── people/
+│       └── domain/               # Person domain model (used for task assignment references)
+├── common/                       # Shared utilities
+│   ├── filters/                  # Exception filters
+│   └── interceptors/             # Logging interceptors
+├── config/                       # Configuration
+└── main.ts                       # Application entry point
 ```
 
-## Compile and run the project
+## 🚀 Features
 
+### Task Management
+- ✅ Create tasks with title, description, status, priority, and optional due date
+- ✅ Get all tasks
+- ✅ Get task by ID
+- ✅ Update task
+- ✅ Delete task
+- ✅ Assign person to task
+- ✅ Unassign person from task
+
+### Task Properties
+- **Status**: `TODO`, `IN_PROGRESS`, `DONE`, `BLOCKED`
+- **Priority**: `LOW`, `MEDIUM`, `HIGH`, `URGENT`
+- **Metadata**: Auto-generated `id`, `createdAt`, `updatedAt`
+- **Assignment**: Multiple people can be assigned to a task
+
+## 📡 API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/tasks` | Get all tasks |
+| `GET` | `/tasks/:id` | Get task by ID |
+| `POST` | `/tasks` | Create a new task |
+| `PUT` | `/tasks/:id` | Update a task |
+| `DELETE` | `/tasks/:id` | Delete a task |
+| `POST` | `/tasks/:id/assign` | Assign a person to a task |
+| `POST` | `/tasks/:id/unassign` | Unassign a person from a task |
+
+### Example Request
+
+**Create Task:**
 ```bash
-# development
-$ npm run start
+POST /tasks
+Content-Type: application/json
 
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+{
+  "title": "Implement user authentication",
+  "description": "Add JWT-based authentication to the API",
+  "status": "TODO",
+  "priority": "HIGH",
+  "dueDate": "2024-12-31T23:59:59Z"
+}
 ```
 
-## Run tests
-
+**Assign Person:**
 ```bash
-# unit tests
-$ npm run test
+POST /tasks/{taskId}/assign
+Content-Type: application/json
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+{
+  "personId": "person-123"
+}
 ```
 
-## Deployment
+## 🛠️ Tech Stack
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+- **Framework**: NestJS 11.x
+- **Language**: TypeScript 5.7
+- **Validation**: class-validator, class-transformer
+- **Testing**: Jest
+- **Code Quality**: ESLint, Prettier
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## 📦 Getting Started
+
+### Prerequisites
+- Node.js (v18 or higher)
+- npm or yarn
+
+### Installation
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+# Install dependencies
+npm install
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Running the Application
 
-## Resources
+```bash
+# Development mode (with hot reload)
+npm run start:dev
 
-Check out a few resources that may come in handy when working with NestJS:
+# Production mode
+npm run start:prod
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+# Debug mode
+npm run start:debug
+```
 
-## Support
+The API will be available at `http://localhost:3000` (default port).
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### Environment Configuration
 
-## Stay in touch
+The application uses configuration from `src/config/app.config.ts`. You can modify the port and environment settings there.
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## 🧪 Testing
 
-## License
+```bash
+# Unit tests
+npm run test
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+# Unit tests in watch mode
+npm run test:watch
+
+# E2E tests
+npm run test:e2e
+
+# Test coverage
+npm run test:cov
+```
+
+### Test Coverage
+
+The project includes comprehensive unit tests for the `TasksService` covering:
+- Task CRUD operations
+- Person assignment/unassignment
+- Error handling (NotFoundException)
+- Edge cases
+
+E2E tests cover the main API endpoints to ensure integration works correctly.
+
+## 🎨 Code Quality
+
+```bash
+# Format code
+npm run format
+
+# Lint code
+npm run lint
+```
+
+## 🏛️ System Design & Scalability
+
+### 1. Database Evolution
+
+Currently using **In-Memory Storage** for fast development and demonstration purposes. For production, I would migrate to **PostgreSQL** for ACID compliance and relational data integrity. 
+
+**Database Indexing Strategy:**
+
+Following best practices, I would start with minimal indexes and add them based on actual query patterns:
+
+- **Primary Key Index** (automatic): On `id` for fast lookups by ID
+- **Index on `status`**: Only if filtering by status becomes a common query pattern (e.g., "show me all IN_PROGRESS tasks")
+- **GIN Index on `assignedPeople`**: Only if querying tasks by assignee becomes frequent (e.g., "show all tasks assigned to person X")
+
+**Indexing Best Practices:**
+- Avoid premature optimization - add indexes based on actual slow queries identified through monitoring
+- Indexes have a cost: slower writes and additional storage
+- Use PostgreSQL's `EXPLAIN ANALYZE` to identify queries that would benefit from indexes
+- Consider composite indexes for multi-column queries (e.g., `(status, priority)` if filtering by both)
+
+This approach ensures optimal performance without over-indexing, which can degrade write performance.
+
+### 2. Caching Strategy
+
+To handle high-read traffic on the "List Tasks" endpoint, I would implement **Redis Caching** with:
+- **TTL of 5 minutes** for task lists
+- **Cache invalidation** on Create/Update/Delete actions
+- **Cache key strategy**: `tasks:all`, `tasks:status:{status}`, `tasks:assignee:{personId}`
+- **Write-through cache** for individual task lookups by ID
+
+This would reduce database load and improve response times for frequently accessed data.
+
+### 3. Observability
+
+I would integrate observability tools for production debugging:
+- **Distributed Tracing**: Using OpenTelemetry or similar to trace requests across services
+- **Centralized Logging**: ELK Stack (Elasticsearch, Logstash, Kibana) or similar for log aggregation
+- **Metrics Collection**: Prometheus + Grafana for monitoring API performance, error rates, and business metrics
+- **APM (Application Performance Monitoring)**: To identify bottlenecks and slow queries
+
+This would enable debugging production issues across microservices and provide insights into system behavior.
+
+### 4. Scalability
+
+To handle task assignment notifications and other cross-cutting concerns, I would move from synchronous calls to an **Event-Driven Architecture**:
+
+- **Message Broker**: RabbitMQ or Apache Kafka for event streaming
+- **Event Types**: 
+  - `TaskCreated`, `TaskUpdated`, `TaskDeleted`
+  - `PersonAssigned`, `PersonUnassigned`
+- **Decoupled Services**: 
+  - Task service publishes events
+  - Notification service subscribes to assignment events
+  - Analytics service subscribes to all task events
+  - Audit service logs all changes
+
+This architecture would:
+- Decouple the Task service from the Notification service
+- Enable horizontal scaling of each service independently
+- Provide resilience through message queuing
+- Allow new services to subscribe to events without modifying existing code
+
+### 5. Additional Scalability Considerations
+
+- **API Rate Limiting**: Implement rate limiting to prevent abuse (e.g., using `@nestjs/throttler`)
+- **Pagination**: Add pagination to the "List Tasks" endpoint for large datasets
+- **Database Connection Pooling**: Configure appropriate connection pools for production databases
+- **Load Balancing**: Use load balancers (e.g., Nginx, AWS ALB) to distribute traffic across multiple instances
+- **Horizontal Scaling**: Design stateless services to enable easy horizontal scaling
+- **CDN**: For any static assets or API responses that can be cached
+
+## 📝 Development Notes
+
+This MVP was built in 1 hour to demonstrate:
+- Clean architecture principles
+- Repository pattern implementation
+- DTO validation
+- Dependency injection
+- Error handling
+- Testing strategies
+
+The codebase is intentionally minimal but follows best practices that can scale as requirements grow.
+
+## 🔄 Future Enhancements
+
+- [ ] Add authentication and authorization
+- [ ] Implement real database (PostgreSQL)
+- [ ] Add pagination and filtering to list endpoints
+- [ ] Implement soft deletes
+- [ ] Add task search functionality
+- [ ] Implement task dependencies
+- [ ] Add task comments and activity logs
+- [ ] Implement file attachments
+- [ ] Add task templates
+- [ ] Implement task recurring schedules
+
+## 📄 License
+
+This project is private and unlicensed.
