@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Post,
   Put,
@@ -18,21 +20,25 @@ export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Get()
+  @HttpCode(HttpStatus.OK)
   async getAllTasks(): Promise<Task[]> {
     return this.tasksService.getAllTasks();
   }
 
   @Get(':id')
+  @HttpCode(HttpStatus.OK)
   async getTaskById(@Param('id') id: string): Promise<Task | null> {
     return this.tasksService.getTaskById(id);
   }
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   async createTask(@Body() createTaskDto: CreateTaskDto): Promise<Task> {
     return this.tasksService.createTask(createTaskDto);
   }
 
   @Put(':id')
+  @HttpCode(HttpStatus.OK)
   async updateTask(
     @Param('id') id: string,
     @Body() updateTaskDto: UpdateTaskDto,
@@ -41,11 +47,13 @@ export class TasksController {
   }
 
   @Delete(':id')
-  async deleteTask(@Param('id') id: string): Promise<boolean> {
-    return this.tasksService.deleteTask(id);
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteTask(@Param('id') id: string): Promise<void> {
+    await this.tasksService.deleteTask(id);
   }
 
   @Post(':id/assign')
+  @HttpCode(HttpStatus.OK)
   async assignPersonToTask(
     @Param('id') id: string,
     @Body() assignPersonDto: AssignPersonDto,
@@ -54,6 +62,7 @@ export class TasksController {
   }
 
   @Post(':id/unassign')
+  @HttpCode(HttpStatus.OK)
   async unassignPerson(
     @Param('id') id: string,
     @Body() assignPersonDto: AssignPersonDto,
