@@ -1,0 +1,329 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { TasksService } from './tasks.service';
+import {
+  ITaskRepository,
+  TASK_REPOSITORY,
+} from '../domain/task.repository.interface';
+import { Task, TaskStatus, Priority } from '../domain/task.entity';
+import { CreateTaskDto } from './dto/create-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
+
+describe('TasksService', () => {
+  let service: TasksService;
+  let repository: jest.Mocked<ITaskRepository>;
+
+  const mockTask: Task = {
+    id: 'task-1',
+    title: 'Test Task',
+    description: 'Test Description',
+    status: TaskStatus.TODO,
+    priority: Priority.MEDIUM,
+    assignedPeople: [],
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+  };
+
+  const mockRepository = {
+    findAll: jest.fn(),
+    findById: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    assignPerson: jest.fn(),
+    unassignPerson: jest.fn(),
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        TasksService,
+        {
+          provide: TASK_REPOSITORY,
+          useValue: mockRepository,
+        },
+      ],
+    }).compile();
+
+    service = module.get<TasksService>(TasksService);
+    repository = module.get(TASK_REPOSITORY);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('getAllTasks', () => {
+    it('should return an array of tasks', async () => {
+      const tasks: Task[] = [mockTask];
+      repository.findAll.mockResolvedValue(tasks);
+
+      const result = await service.getAllTasks();
+
+      expect(result).toEqual(tasks);
+      expect(repository.findAll).toHaveBeenCalledTimes(1);
+    });
+
+    it('should return an empty array when no tasks exist', async () => {
+      repository.findAll.mockResolvedValue([]);
+
+      const result = await service.getAllTasks();
+
+      expect(result).toEqual([]);
+      expect(repository.findAll).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('getTaskById', () => {
+    it('should return a task when found', async () => {
+      repository.findById.mockResolvedValue(mockTask);
+
+      const result = await service.getTaskById('task-1');
+
+      expect(result).toEqual(mockTask);
+      expect(repository.findById).toHaveBeenCalledWith('task-1');
+      expect(repository.findById).toHaveBeenCalledTimes(1);
+    });
+
+    it('should return null when task is not found', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      const result = await service.getTaskById('non-existent-id');
+
+      expect(result).toBeNull();
+      expect(repository.findById).toHaveBeenCalledWith('non-existent-id');
+      expect(repository.findById).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('createTask', () => {
+    it('should create a new task with generated id and timestamps', async () => {
+      const createTaskDto: CreateTaskDto = {
+        title: 'New Task',
+        description: 'New Description',
+        status: TaskStatus.TODO,
+        priority: Priority.HIGH,
+      };
+
+      const createdTask: Task = {
+        ...createTaskDto,
+        id: 'generated-id',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        assignedPeople: [],
+      };
+
+      repository.create.mockResolvedValue(createdTask);
+
+      const result = await service.createTask(createTaskDto);
+
+      expect(result).toEqual(createdTask);
+      expect(repository.create).toHaveBeenCalledTimes(1);
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: createTaskDto.title,
+          description: createTaskDto.description,
+          status: createTaskDto.status,
+          priority: createTaskDto.priority,
+          assignedPeople: [],
+          id: expect.any(String),
+          createdAt: expect.any(Date),
+          updatedAt: expect.any(Date),
+        }),
+      );
+    });
+
+    it('should create a task with optional dueDate', async () => {
+      const dueDate = new Date('2024-12-31');
+      const createTaskDto: CreateTaskDto = {
+        title: 'Task with Due Date',
+        description: 'Description',
+        status: TaskStatus.IN_PROGRESS,
+        priority: Priority.URGENT,
+        dueDate,
+      };
+
+      const createdTask: Task = {
+        ...createTaskDto,
+        id: 'generated-id',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        assignedPeople: [],
+      };
+
+      repository.create.mockResolvedValue(createdTask);
+
+      const result = await service.createTask(createTaskDto);
+
+      expect(result).toEqual(createdTask);
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dueDate,
+        }),
+      );
+    });
+  });
+
+  describe('updateTask', () => {
+    it('should update a task with new data and updated timestamp', async () => {
+      const updateTaskDto: UpdateTaskDto = {
+        title: 'Updated Title',
+        status: TaskStatus.IN_PROGRESS,
+      };
+
+      const updatedTask: Task = {
+        ...mockTask,
+        ...updateTaskDto,
+        updatedAt: new Date(),
+      };
+
+      repository.update.mockResolvedValue(updatedTask);
+
+      const result = await service.updateTask('task-1', updateTaskDto);
+
+      expect(result).toEqual(updatedTask);
+      expect(repository.update).toHaveBeenCalledWith(
+        'task-1',
+        expect.objectContaining({
+          ...updateTaskDto,
+          updatedAt: expect.any(Date),
+        }),
+      );
+      expect(repository.update).toHaveBeenCalledTimes(1);
+    });
+
+    it('should update only provided fields', async () => {
+      const updateTaskDto: UpdateTaskDto = {
+        priority: Priority.HIGH,
+      };
+
+      const updatedTask: Task = {
+        ...mockTask,
+        priority: Priority.HIGH,
+        updatedAt: new Date(),
+      };
+
+      repository.update.mockResolvedValue(updatedTask);
+
+      const result = await service.updateTask('task-1', updateTaskDto);
+
+      expect(result).toEqual(updatedTask);
+      expect(repository.update).toHaveBeenCalledWith(
+        'task-1',
+        expect.objectContaining({
+          priority: Priority.HIGH,
+          updatedAt: expect.any(Date),
+        }),
+      );
+    });
+  });
+
+  describe('deleteTask', () => {
+    it('should delete a task and return true', async () => {
+      repository.delete.mockResolvedValue(true);
+
+      const result = await service.deleteTask('task-1');
+
+      expect(result).toBe(true);
+      expect(repository.delete).toHaveBeenCalledWith('task-1');
+      expect(repository.delete).toHaveBeenCalledTimes(1);
+    });
+
+    it('should return false when task deletion fails', async () => {
+      repository.delete.mockResolvedValue(false);
+
+      const result = await service.deleteTask('non-existent-id');
+
+      expect(result).toBe(false);
+      expect(repository.delete).toHaveBeenCalledWith('non-existent-id');
+      expect(repository.delete).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('assignPersonToTask', () => {
+    it('should assign a person to a task', async () => {
+      const personId = 'person-1';
+      const updatedTask: Task = {
+        ...mockTask,
+        assignedPeople: [personId],
+        updatedAt: new Date(),
+      };
+
+      repository.assignPerson.mockResolvedValue(updatedTask);
+
+      const result = await service.assignPersonToTask('task-1', personId);
+
+      expect(result).toEqual(updatedTask);
+      expect(repository.assignPerson).toHaveBeenCalledWith('task-1', personId);
+      expect(repository.assignPerson).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle assigning multiple people', async () => {
+      const personId1 = 'person-1';
+      const personId2 = 'person-2';
+      const updatedTask: Task = {
+        ...mockTask,
+        assignedPeople: [personId1, personId2],
+        updatedAt: new Date(),
+      };
+
+      repository.assignPerson.mockResolvedValue(updatedTask);
+
+      const result = await service.assignPersonToTask('task-1', personId2);
+
+      expect(result).toEqual(updatedTask);
+      expect(repository.assignPerson).toHaveBeenCalledWith('task-1', personId2);
+    });
+  });
+
+  describe('unassignPersonFromTask', () => {
+    it('should unassign a person from a task', async () => {
+      const personId = 'person-1';
+      const taskWithPerson: Task = {
+        ...mockTask,
+        assignedPeople: [personId],
+      };
+
+      const updatedTask: Task = {
+        ...taskWithPerson,
+        assignedPeople: [],
+        updatedAt: new Date(),
+      };
+
+      repository.unassignPerson.mockResolvedValue(updatedTask);
+
+      const result = await service.unassignPersonFromTask('task-1', personId);
+
+      expect(result).toEqual(updatedTask);
+      expect(repository.unassignPerson).toHaveBeenCalledWith(
+        'task-1',
+        personId,
+      );
+      expect(repository.unassignPerson).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle unassigning when multiple people are assigned', async () => {
+      const personId1 = 'person-1';
+      const personId2 = 'person-2';
+      const taskWithPeople: Task = {
+        ...mockTask,
+        assignedPeople: [personId1, personId2],
+      };
+
+      const updatedTask: Task = {
+        ...taskWithPeople,
+        assignedPeople: [personId2],
+        updatedAt: new Date(),
+      };
+
+      repository.unassignPerson.mockResolvedValue(updatedTask);
+
+      const result = await service.unassignPersonFromTask('task-1', personId1);
+
+      expect(result).toEqual(updatedTask);
+      expect(repository.unassignPerson).toHaveBeenCalledWith(
+        'task-1',
+        personId1,
+      );
+    });
+  });
+});
