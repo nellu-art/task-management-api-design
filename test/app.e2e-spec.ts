@@ -3,6 +3,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { Task } from '../src/modules/tasks/domain/task.entity';
 
 describe('TasksController (e2e)', () => {
   let app: INestApplication<App>;
@@ -44,14 +45,15 @@ describe('TasksController (e2e)', () => {
         .send(createTaskDto)
         .expect(201)
         .expect((res) => {
-          expect(res.body).toHaveProperty('id');
-          expect(res.body.title).toBe(createTaskDto.title);
-          expect(res.body.description).toBe(createTaskDto.description);
-          expect(res.body.status).toBe(createTaskDto.status);
-          expect(res.body.priority).toBe(createTaskDto.priority);
-          expect(res.body).toHaveProperty('createdAt');
-          expect(res.body).toHaveProperty('updatedAt');
-          expect(res.body.assignedPeople).toEqual([]);
+          const body = res.body as Task;
+          expect(body).toHaveProperty('id');
+          expect(body.title).toBe(createTaskDto.title);
+          expect(body.description).toBe(createTaskDto.description);
+          expect(body.status).toBe(createTaskDto.status);
+          expect(body.priority).toBe(createTaskDto.priority);
+          expect(body).toHaveProperty('createdAt');
+          expect(body).toHaveProperty('updatedAt');
+          expect(body.assignedPeople).toEqual([]);
         });
     });
   });
@@ -71,18 +73,20 @@ describe('TasksController (e2e)', () => {
         .send(createTaskDto)
         .expect(201);
 
-      const taskId = createResponse.body.id;
+      const createBody = createResponse.body as Task;
+      const taskId = createBody.id;
 
       // Then get it by id
       return request(app.getHttpServer())
         .get(`/tasks/${taskId}`)
         .expect(200)
         .expect((res) => {
-          expect(res.body.id).toBe(taskId);
-          expect(res.body.title).toBe(createTaskDto.title);
-          expect(res.body.description).toBe(createTaskDto.description);
-          expect(res.body.status).toBe(createTaskDto.status);
-          expect(res.body.priority).toBe(createTaskDto.priority);
+          const body = res.body as Task;
+          expect(body.id).toBe(taskId);
+          expect(body.title).toBe(createTaskDto.title);
+          expect(body.description).toBe(createTaskDto.description);
+          expect(body.status).toBe(createTaskDto.status);
+          expect(body.priority).toBe(createTaskDto.priority);
         });
     });
 
@@ -119,10 +123,11 @@ describe('TasksController (e2e)', () => {
         .get('/tasks')
         .expect(200)
         .expect((res) => {
-          expect(Array.isArray(res.body)).toBe(true);
-          expect(res.body.length).toBeGreaterThanOrEqual(2);
-          expect(res.body.some((t) => t.title === task1.title)).toBe(true);
-          expect(res.body.some((t) => t.title === task2.title)).toBe(true);
+          const body = res.body as Task[];
+          expect(Array.isArray(body)).toBe(true);
+          expect(body.length).toBeGreaterThanOrEqual(2);
+          expect(body.some((t) => t.title === task1.title)).toBe(true);
+          expect(body.some((t) => t.title === task2.title)).toBe(true);
         });
     });
   });

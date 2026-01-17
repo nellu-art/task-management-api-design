@@ -13,14 +13,16 @@ import { Request, Response } from 'express';
 export class LoggingInterceptor implements NestInterceptor {
   private readonly logger = new Logger(LoggingInterceptor.name);
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const ctx = context.switchToHttp();
     const request = ctx.getRequest<Request>();
     const response = ctx.getResponse<Response>();
 
-    const { method, url, body, params, query } = request;
+    const { method, url, ip } = request;
+    const body = request.body as unknown;
+    const params = request.params as unknown;
+    const query = request.query as unknown;
     const userAgent = request.get('user-agent') || '';
-    const ip = request.ip;
 
     const now = Date.now();
 
@@ -37,7 +39,7 @@ export class LoggingInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap({
-        next: (data) => {
+        next: (data: unknown) => {
           const responseTime = Date.now() - now;
           this.logger.log({
             message: 'Outgoing Response',
@@ -48,14 +50,16 @@ export class LoggingInterceptor implements NestInterceptor {
             dataSize: JSON.stringify(data).length,
           });
         },
-        error: (error) => {
+        error: (error: unknown) => {
           const responseTime = Date.now() - now;
+          const errorMessage =
+            error instanceof Error ? error.message : 'Unknown error';
           this.logger.error({
             message: 'Request Failed',
             method,
             url,
             responseTime: `${responseTime}ms`,
-            error: error.message,
+            error: errorMessage,
           });
         },
       }),

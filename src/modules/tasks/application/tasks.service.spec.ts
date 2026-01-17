@@ -24,7 +24,7 @@ describe('TasksService', () => {
     updatedAt: new Date('2024-01-01'),
   };
 
-  const mockRepository = {
+  const mockRepository: jest.Mocked<ITaskRepository> = {
     findAll: jest.fn(),
     findById: jest.fn(),
     create: jest.fn(),
@@ -46,7 +46,7 @@ describe('TasksService', () => {
     }).compile();
 
     service = module.get<TasksService>(TasksService);
-    repository = module.get(TASK_REPOSITORY);
+    repository = module.get<jest.Mocked<ITaskRepository>>(TASK_REPOSITORY);
   });
 
   afterEach(() => {
@@ -107,12 +107,14 @@ describe('TasksService', () => {
         priority: Priority.HIGH,
       };
 
+      const { dueDate: dueDateString, ...taskData } = createTaskDto;
       const createdTask: Task = {
-        ...createTaskDto,
+        ...taskData,
         id: 'generated-id',
         createdAt: new Date(),
         updatedAt: new Date(),
         assignedPeople: [],
+        dueDate: dueDateString ? new Date(dueDateString) : undefined,
       };
 
       repository.create.mockResolvedValue(createdTask);
@@ -128,29 +130,33 @@ describe('TasksService', () => {
           status: createTaskDto.status,
           priority: createTaskDto.priority,
           assignedPeople: [],
-          id: expect.any(String),
-          createdAt: expect.any(Date),
-          updatedAt: expect.any(Date),
+          id: expect.any(String) as string,
+          createdAt: expect.any(Date) as Date,
+          updatedAt: expect.any(Date) as Date,
         }),
       );
     });
 
     it('should create a task with optional dueDate', async () => {
-      const dueDate = new Date('2024-12-31');
+      const dueDateString = '2024-12-31T00:00:00.000Z';
       const createTaskDto: CreateTaskDto = {
         title: 'Task with Due Date',
         description: 'Description',
         status: TaskStatus.IN_PROGRESS,
         priority: Priority.URGENT,
-        dueDate,
+        dueDate: dueDateString,
       };
 
+      const { dueDate: dueDateStringFromDto, ...taskData } = createTaskDto;
       const createdTask: Task = {
-        ...createTaskDto,
+        ...taskData,
         id: 'generated-id',
         createdAt: new Date(),
         updatedAt: new Date(),
         assignedPeople: [],
+        dueDate: dueDateStringFromDto
+          ? new Date(dueDateStringFromDto)
+          : undefined,
       };
 
       repository.create.mockResolvedValue(createdTask);
@@ -160,7 +166,7 @@ describe('TasksService', () => {
       expect(result).toEqual(createdTask);
       expect(repository.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          dueDate,
+          dueDate: createdTask.dueDate,
         }),
       );
     });
@@ -173,10 +179,17 @@ describe('TasksService', () => {
         status: TaskStatus.IN_PROGRESS,
       };
 
+      const { dueDate: dueDateString, ...updateData } = updateTaskDto;
       const updatedTask: Task = {
         ...mockTask,
-        ...updateTaskDto,
+        ...updateData,
         updatedAt: new Date(),
+        dueDate:
+          dueDateString !== undefined
+            ? dueDateString
+              ? new Date(dueDateString)
+              : undefined
+            : mockTask.dueDate,
       };
 
       repository.findById.mockResolvedValue(mockTask);
@@ -190,7 +203,7 @@ describe('TasksService', () => {
         'task-1',
         expect.objectContaining({
           ...updateTaskDto,
-          updatedAt: expect.any(Date),
+          updatedAt: expect.any(Date) as Date,
         }),
       );
       expect(repository.update).toHaveBeenCalledTimes(1);
@@ -217,7 +230,7 @@ describe('TasksService', () => {
         'task-1',
         expect.objectContaining({
           priority: Priority.HIGH,
-          updatedAt: expect.any(Date),
+          updatedAt: expect.any(Date) as Date,
         }),
       );
     });

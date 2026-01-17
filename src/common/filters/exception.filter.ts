@@ -48,16 +48,26 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
 
+      let message: string | string[];
+      if (
+        typeof exceptionResponse === 'object' &&
+        exceptionResponse !== null &&
+        'message' in exceptionResponse
+      ) {
+        const responseWithMessage = exceptionResponse as {
+          message: string | string[];
+        };
+        message = responseWithMessage.message;
+      } else {
+        message = exception.message;
+      }
+
       return {
         statusCode: status,
         timestamp,
         path,
         method,
-        message:
-          typeof exceptionResponse === 'object' &&
-          'message' in exceptionResponse
-            ? (exceptionResponse as any).message
-            : exception.message,
+        message,
         error: exception.name,
       };
     }
@@ -79,7 +89,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     request: Request,
     errorResponse: ErrorResponse,
   ): void {
-    const { method, url, body, params, query } = request;
+    const { method, url } = request;
+    const body = request.body as unknown;
+    const params = request.params as unknown;
+    const query = request.query as unknown;
 
     const logMessage = {
       message: 'HTTP Exception',

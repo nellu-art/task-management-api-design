@@ -29,4 +29,8 @@ async function bootstrap() {
   );
   console.log(`📝 Environment: ${appConfig.env}`);
 }
-bootstrap();
+
+bootstrap().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
