@@ -140,7 +140,11 @@ npm run start:prod
 npm run start:debug
 ```
 
-The API will be available at `http://localhost:3000` (default port).
+The API will be available at:
+- **Base URL**: `http://localhost:3000` (default port)
+- **API Endpoints**: `http://localhost:3000/tasks`
+
+You can configure the port via the `PORT` environment variable or by modifying `src/config/app.config.ts`.
 
 ### Environment Configuration
 
@@ -244,14 +248,65 @@ This architecture would:
 - Provide resilience through message queuing
 - Allow new services to subscribe to events without modifying existing code
 
-### 5. Additional Scalability Considerations
+### 5. Security Enhancements
 
-- **API Rate Limiting**: Implement rate limiting to prevent abuse (e.g., using `@nestjs/throttler`)
+For production deployment, I would implement comprehensive security measures:
+
+**1. Security Headers (Helmet)**
+- Implement `helmet` middleware to set secure HTTP headers
+- Protect against common vulnerabilities (XSS, clickjacking, MIME-type sniffing)
+- Configure Content Security Policy (CSP) headers
+
+**2. CORS Configuration**
+- Configure Cross-Origin Resource Sharing (CORS) properly
+- Restrict allowed origins to known domains
+- Enable credentials only when necessary
+- Set appropriate preflight cache duration
+
+**3. Rate Limiting**
+- Implement API rate limiting using `@nestjs/throttler` to prevent abuse
+- Configure different limits for authenticated vs anonymous users
+- Set up rate limit headers for client awareness
+- Implement IP-based and user-based throttling strategies
+
+**4. Input Validation & Sanitization**
+- Enhanced DTO validation with `class-validator` (already implemented)
+- Input sanitization to prevent XSS attacks
+- SQL injection prevention (when moving to database)
+- File upload validation and scanning (if file attachments are added)
+
+**5. Authentication & Authorization**
+- JWT-based authentication for API access
+- Role-based access control (RBAC) for different user permissions
+- API key management for service-to-service communication
+- OAuth2/OpenID Connect integration for third-party authentication
+
+**6. Data Protection**
+- Encrypt sensitive data at rest (database encryption)
+- Use HTTPS/TLS for all communications
+- Implement secure password hashing (bcrypt, Argon2) if user management is added
+- PII (Personally Identifiable Information) masking in logs
+
+**7. Security Monitoring**
+- Implement security event logging
+- Set up intrusion detection
+- Monitor for suspicious patterns (brute force, unusual access patterns)
+- Regular security audits and penetration testing
+
+**8. API Security Best Practices**
+- API versioning to manage breaking changes securely
+- Request/response encryption for sensitive endpoints
+- Implement request signing for critical operations
+- Add request size limits to prevent DoS attacks
+
+### 6. Additional Scalability Considerations
+
 - **Pagination**: Add pagination to the "List Tasks" endpoint for large datasets
 - **Database Connection Pooling**: Configure appropriate connection pools for production databases
 - **Load Balancing**: Use load balancers (e.g., Nginx, AWS ALB) to distribute traffic across multiple instances
 - **Horizontal Scaling**: Design stateless services to enable easy horizontal scaling
 - **CDN**: For any static assets or API responses that can be cached
+- **Compression**: Enable gzip/brotli compression for API responses to reduce bandwidth
 
 ## 📝 Development Notes
 
