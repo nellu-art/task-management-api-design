@@ -1,10 +1,12 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
-import { appConfig } from './config/app.config';
+import { AppConfig } from './config/app.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const logger = new Logger('Bootstrap');
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -17,15 +19,24 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(appConfig.port);
+  const configService = app.get(ConfigService);
+  const appConfig = configService.get<AppConfig>('app');
+  if (!appConfig) {
+    logger.error('App configuration not found');
+    throw new Error('App configuration not found');
+  }
+  const port = appConfig.port;
 
-  console.log(
-    `🚀 Application is running on: http://localhost:${appConfig.port}`,
-  );
-  console.log(`📝 Environment: ${appConfig.env}`);
+  await app.listen(port);
+
+  logger.log(`🚀 Application is running on: http://localhost:${port}`);
+  logger.log(`📝 Environment: ${appConfig.env}`);
 }
 
 bootstrap().catch((error) => {
-  console.error(error);
+  // Use console.error as fallback since Logger might not be available
+  // if bootstrap fails before app creation
+
+  console.error('Failed to start application:', error);
   process.exit(1);
 });

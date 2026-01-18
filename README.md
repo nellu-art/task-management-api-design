@@ -33,7 +33,8 @@ src/
 │   ├── tasks/
 │   │   ├── application/          # Business logic layer
 │   │   │   ├── dto/              # Data Transfer Objects
-│   │   │   └── tasks.service.ts  # Application service
+│   │   │   ├── tasks.service.ts  # Application service
+│   │   │   └── tasks.service.spec.ts  # Unit tests
 │   │   ├── domain/               # Domain layer
 │   │   │   ├── task.entity.ts    # Domain entity
 │   │   │   └── task.repository.interface.ts  # Repository interface
@@ -46,8 +47,13 @@ src/
 │       └── domain/               # Person domain model (used for task assignment references)
 ├── common/                       # Shared utilities
 │   ├── filters/                  # Exception filters
+│   │   └── exception.filter.ts  # Global exception handler
 │   └── interceptors/             # Logging interceptors
+│       └── logging.interceptor.ts  # Request/response logging
 ├── config/                       # Configuration
+│   ├── app.config.ts            # Application configuration factory
+│   └── app.config.schema.ts     # Joi validation schema
+├── app.module.ts                 # Root application module
 └── main.ts                       # Application entry point
 ```
 
@@ -57,6 +63,8 @@ src/
 - ✅ **Global Exception Handling**: Centralized error handling with structured error responses
 - ✅ **Request Logging**: Automatic logging of all incoming requests and responses
 - ✅ **Input Validation**: Comprehensive DTO validation using class-validator
+- ✅ **Configuration Management**: Type-safe configuration with environment variable validation
+- ✅ **Error Stack Traces**: Configurable error stack traces (hidden in production)
 
 ### Task Management
 - ✅ Create tasks with title, description, status, priority, and optional due date
@@ -115,6 +123,7 @@ Content-Type: application/json
 
 - **Framework**: NestJS 11.x
 - **Language**: TypeScript 5.7
+- **Configuration**: @nestjs/config with Joi validation
 - **Validation**: class-validator, class-transformer
 - **Testing**: Jest
 - **Code Quality**: ESLint, Prettier
@@ -149,11 +158,34 @@ The API will be available at:
 - **Base URL**: `http://localhost:3000` (default port)
 - **Tasks Endpoint**: `http://localhost:3000/tasks`
 
-You can configure the port via the `PORT` environment variable or by modifying `src/config/app.config.ts`.
-
 ### Environment Configuration
 
-The application uses configuration from `src/config/app.config.ts`. You can modify the port and environment settings there.
+The application uses `@nestjs/config` for configuration management with environment variable validation.
+
+**Setup:**
+1. Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Configure environment variables in `.env`:
+   ```env
+   NODE_ENV=development
+   PORT=3000
+   ```
+
+**Available Environment Variables:**
+- `NODE_ENV`: Application environment (`development`, `production`, `test`, or `prod`)
+- `PORT`: Server port (default: `3000`, must be between 1-65535)
+
+**Configuration Features:**
+- ✅ Environment variable validation using Joi schema
+- ✅ Type-safe configuration with TypeScript
+- ✅ Automatic validation on application startup
+- ✅ Default values for all configuration options
+- ✅ Global configuration accessible via `ConfigService`
+
+The configuration is defined in `src/config/app.config.ts` and validated using `src/config/app.config.schema.ts`.
 
 ## 🧪 Testing
 
@@ -342,15 +374,25 @@ For production deployment, I would implement comprehensive security measures:
 
 ## 📝 Development Notes
 
-This MVP was built in 1 hour to demonstrate:
-- Clean architecture principles
-- Repository pattern implementation
-- DTO validation
-- Dependency injection
-- Error handling
-- Testing strategies
+This MVP was built to demonstrate:
+- **Clean Architecture**: Layered architecture with clear separation of concerns
+- **Repository Pattern**: Data abstraction for easy storage implementation swapping
+- **DTO Validation**: Input validation using class-validator
+- **Dependency Injection**: NestJS built-in DI for testability and maintainability
+- **Configuration Management**: Type-safe configuration with @nestjs/config
+- **Error Handling**: Global exception filters with structured error responses
+- **Testing Strategies**: Unit tests and E2E tests
 
 The codebase is intentionally minimal but follows best practices that can scale as requirements grow.
+
+### Configuration Architecture
+
+The application uses NestJS's `ConfigModule` with the following features:
+- **Namespaced Configuration**: Using `registerAs` pattern for organized config
+- **Type Safety**: Full TypeScript support with `ConfigType` helper
+- **Validation**: Joi schema validation at startup
+- **Global Access**: Configuration available throughout the app via `ConfigService`
+- **Caching**: Configuration values are cached for performance
 
 ## 🔄 Future Enhancements
 

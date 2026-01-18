@@ -6,8 +6,9 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
-import { appConfig } from '../../config/app.config';
+import { AppConfig } from '../../config/app.config';
 
 type ErrorResponse = {
   statusCode: number;
@@ -22,6 +23,16 @@ type ErrorResponse = {
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
+  private readonly appConfig: AppConfig;
+
+  constructor(private readonly configService: ConfigService) {
+    const config = this.configService.get<AppConfig>('app');
+    if (!config) {
+      this.logger.error('App configuration not found in exception filter');
+      throw new Error('App configuration not found');
+    }
+    this.appConfig = config;
+  }
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -81,7 +92,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       message: 'Internal server error',
       error: 'InternalServerError',
       stack:
-        appConfig.showErrorStack && exception instanceof Error
+        this.appConfig.showErrorStack && exception instanceof Error
           ? exception.stack
           : undefined,
     };
