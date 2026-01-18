@@ -60,6 +60,7 @@ src/
 ## 🚀 Features
 
 ### API Features
+- ✅ **Swagger/OpenAPI Documentation**: Interactive API documentation with Swagger UI at `/api`
 - ✅ **Global Exception Handling**: Centralized error handling with structured error responses
 - ✅ **Request Logging**: Automatic logging of all incoming requests and responses
 - ✅ **Input Validation**: Comprehensive DTO validation using class-validator
@@ -125,6 +126,7 @@ Content-Type: application/json
 - **Language**: TypeScript 5.7
 - **Configuration**: @nestjs/config with Joi validation
 - **Validation**: class-validator, class-transformer
+- **API Documentation**: @nestjs/swagger (Swagger/OpenAPI)
 - **Testing**: Jest
 - **Code Quality**: ESLint, Prettier
 
@@ -157,6 +159,7 @@ npm run start:debug
 The API will be available at:
 - **Base URL**: `http://localhost:3000` (default port)
 - **Tasks Endpoint**: `http://localhost:3000/tasks`
+- **Swagger Documentation**: `http://localhost:3000/api` - Interactive API documentation with Swagger UI
 
 ### Environment Configuration
 

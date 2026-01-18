@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AppConfig } from './config/app.config';
 
@@ -19,6 +20,23 @@ async function bootstrap() {
     }),
   );
 
+  // Swagger/OpenAPI configuration
+  const config = new DocumentBuilder()
+    .setTitle('Tasks API')
+    .setDescription(
+      'A RESTful API for managing tasks, built with NestJS following clean architecture principles.',
+    )
+    .setVersion('1.0')
+    .addTag('tasks', 'Task management endpoints')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  });
+
   const configService = app.get(ConfigService);
   const appConfig = configService.get<AppConfig>('app');
   if (!appConfig) {
@@ -31,6 +49,9 @@ async function bootstrap() {
 
   logger.log(`🚀 Application is running on: http://localhost:${port}`);
   logger.log(`📝 Environment: ${appConfig.env}`);
+  logger.log(
+    `📚 Swagger documentation available at: http://localhost:${port}/api`,
+  );
 }
 
 bootstrap().catch((error) => {

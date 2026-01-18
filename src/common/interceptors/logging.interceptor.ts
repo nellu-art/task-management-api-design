@@ -41,13 +41,17 @@ export class LoggingInterceptor implements NestInterceptor {
       tap({
         next: (data: unknown) => {
           const responseTime = Date.now() - now;
+          const dataSize =
+            data !== undefined && data !== null
+              ? JSON.stringify(data).length
+              : 0;
           this.logger.log({
             message: 'Outgoing Response',
             method,
             url,
             statusCode: response.statusCode,
             responseTime: `${responseTime}ms`,
-            dataSize: JSON.stringify(data).length,
+            dataSize,
           });
         },
         error: (error: unknown) => {
