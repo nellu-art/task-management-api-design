@@ -19,9 +19,9 @@ export class LoggingInterceptor implements NestInterceptor {
     const response = ctx.getResponse<Response>();
 
     const { method, url, ip } = request;
-    const body = request.body as unknown;
-    const params = request.params as unknown;
-    const query = request.query as unknown;
+    const body = request.body as Record<string, unknown>;
+    const params = request.params as Record<string, string>;
+    const query = request.query as Record<string, string | string[]>;
     const userAgent = request.get('user-agent') || '';
 
     const now = Date.now();

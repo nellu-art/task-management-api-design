@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { appConfig } from 'src/config/app.config';
+import { appConfig } from '../../config/app.config';
 
 type ErrorResponse = {
   statusCode: number;
@@ -80,7 +80,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       method,
       message: 'Internal server error',
       error: 'InternalServerError',
-      stack: appConfig.showErrorStack ? (exception as Error).stack : undefined,
+      stack:
+        appConfig.showErrorStack && exception instanceof Error
+          ? exception.stack
+          : undefined,
     };
   }
 
@@ -90,9 +93,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     errorResponse: ErrorResponse,
   ): void {
     const { method, url } = request;
-    const body = request.body as unknown;
-    const params = request.params as unknown;
-    const query = request.query as unknown;
+    const body = request.body as Record<string, unknown>;
+    const params = request.params as Record<string, string>;
+    const query = request.query as Record<string, string | string[]>;
 
     const logMessage = {
       message: 'HTTP Exception',

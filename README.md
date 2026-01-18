@@ -53,6 +53,11 @@ src/
 
 ## 🚀 Features
 
+### API Features
+- ✅ **Global Exception Handling**: Centralized error handling with structured error responses
+- ✅ **Request Logging**: Automatic logging of all incoming requests and responses
+- ✅ **Input Validation**: Comprehensive DTO validation using class-validator
+
 ### Task Management
 - ✅ Create tasks with title, description, status, priority, and optional due date
 - ✅ Get all tasks
@@ -142,7 +147,7 @@ npm run start:debug
 
 The API will be available at:
 - **Base URL**: `http://localhost:3000` (default port)
-- **API Endpoints**: `http://localhost:3000/tasks`
+- **Tasks Endpoint**: `http://localhost:3000/tasks`
 
 You can configure the port via the `PORT` environment variable or by modifying `src/config/app.config.ts`.
 
@@ -190,7 +195,7 @@ npm run lint
 
 ### 1. Database Evolution
 
-Currently using **In-Memory Storage** for fast development and demonstration purposes. For production, I would migrate to **PostgreSQL** for ACID compliance and relational data integrity. 
+Currently using **In-Memory Storage** for fast development and demonstration purposes. For production, I would migrate to **PostgreSQL** for ACID compliance and relational data integrity.
 
 **Database Indexing Strategy:**
 
@@ -228,11 +233,30 @@ I would integrate observability tools for production debugging:
 
 This would enable debugging production issues across microservices and provide insights into system behavior.
 
-### 4. Scalability
+### 4. Scalability Strategy
 
-To handle task assignment notifications and other cross-cutting concerns, I would move from synchronous calls to an **Event-Driven Architecture**:
+A **progressive scaling approach** is recommended, introducing complexity only when needed:
 
-- **Message Broker**: RabbitMQ or Apache Kafka for event streaming
+#### Phase 1: Monolithic Scaling (Current → Medium Scale)
+For initial growth, scale the monolith:
+- **Vertical Scaling**: Increase instance size (CPU, RAM) - simplest first step
+- **Horizontal Scaling**: Multiple stateless instances behind load balancer
+- **Database Optimization**: Add indexes, optimize queries, connection pooling
+- **Caching**: Redis for frequently accessed data (see Caching Strategy above)
+- **Expected Capacity**: 10K-100K requests/day
+- **When**: Early to medium traffic, predictable patterns
+
+#### Phase 2: Read Replicas (Medium → Large Scale)
+When read traffic significantly exceeds write traffic:
+- **Database Read Replicas**: Distribute read queries across replicas
+- **Cache-Aside Pattern**: Cache frequently accessed data in Redis
+- **CDN**: For static content if applicable
+- **Expected Capacity**: 100K-1M requests/day
+- **When**: Read-heavy workloads, geographic distribution needed
+
+#### Phase 3: Event-Driven Architecture (Large → Very Large Scale)
+When you need to decouple services and handle complex workflows:
+- **Message Broker**: RabbitMQ (simpler, good for most cases) or Apache Kafka (high throughput, event streaming)
 - **Event Types**: 
   - `TaskCreated`, `TaskUpdated`, `TaskDeleted`
   - `PersonAssigned`, `PersonUnassigned`
@@ -242,11 +266,18 @@ To handle task assignment notifications and other cross-cutting concerns, I woul
   - Analytics service subscribes to all task events
   - Audit service logs all changes
 
-This architecture would:
-- Decouple the Task service from the Notification service
-- Enable horizontal scaling of each service independently
+**When to Introduce Event-Driven:**
+- Multiple services need to react to task changes
+- Need for eventual consistency across services
+- Complex workflows (notifications, analytics, audit)
+- High throughput requirements (millions of requests/day)
+- **Note**: Not necessary for simple task management - only add when you have actual need for decoupling
+
+**Benefits:**
+- Decouple services for independent scaling
 - Provide resilience through message queuing
-- Allow new services to subscribe to events without modifying existing code
+- Allow new services to subscribe without modifying existing code
+- Enable event sourcing and CQRS patterns if needed
 
 ### 5. Security Enhancements
 
@@ -294,19 +325,20 @@ For production deployment, I would implement comprehensive security measures:
 - Regular security audits and penetration testing
 
 **8. API Security Best Practices**
-- API versioning to manage breaking changes securely
+- API versioning to manage breaking changes securely (can be added when needed)
 - Request/response encryption for sensitive endpoints
 - Implement request signing for critical operations
 - Add request size limits to prevent DoS attacks
 
 ### 6. Additional Scalability Considerations
 
-- **Pagination**: Add pagination to the "List Tasks" endpoint for large datasets
-- **Database Connection Pooling**: Configure appropriate connection pools for production databases
-- **Load Balancing**: Use load balancers (e.g., Nginx, AWS ALB) to distribute traffic across multiple instances
-- **Horizontal Scaling**: Design stateless services to enable easy horizontal scaling
+- **Pagination**: Add pagination to the "List Tasks" endpoint for large datasets (cursor-based or offset-based)
+- **Database Connection Pooling**: Configure appropriate connection pools (e.g., 20-50 connections per instance)
+- **Load Balancing**: Use load balancers (e.g., Nginx, AWS ALB) with health checks to distribute traffic
+- **Stateless Design**: ✅ Already implemented - no session storage, enables easy horizontal scaling
 - **CDN**: For any static assets or API responses that can be cached
 - **Compression**: Enable gzip/brotli compression for API responses to reduce bandwidth
+- **Health Checks**: Implement `/health` endpoint for load balancer and monitoring
 
 ## 📝 Development Notes
 

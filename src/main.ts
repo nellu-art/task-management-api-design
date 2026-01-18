@@ -1,8 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
-import { GlobalExceptionFilter } from './common/filters/exception.filter';
 import { appConfig } from './config/app.config';
 
 async function bootstrap() {
@@ -10,17 +8,14 @@ async function bootstrap() {
 
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
+      whitelist: true, // Remove properties that are not in the DTO
+      forbidNonWhitelisted: true, // Throw an error if a property that is not in the DTO is sent
+      transform: true, // Transform the payload to the DTO type
       transformOptions: {
-        enableImplicitConversion: true,
+        enableImplicitConversion: true, // Enable implicit conversion of payload to DTO type
       },
     }),
   );
-
-  app.useGlobalInterceptors(new LoggingInterceptor());
-  app.useGlobalFilters(new GlobalExceptionFilter());
 
   await app.listen(appConfig.port);
 
